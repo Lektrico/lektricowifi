@@ -1,11 +1,11 @@
-"""Asynchronous Python client for Lektrico charger."""
-from .lektricowifi import Charger, ChargerConnectionError, ChargerError
-from .models import Info, Settings
+"""Asynchronous Python client for Lektrico device."""
+from .lektricowifi import Device, DeviceConnectionError, DeviceError
+from .models import InfoForCharger, SettingsForCharger, DetectType
 
 __all__ = [
-    "Charger",
-    "ChargerConnectionError",
-    "ChargerError",
-    "Info",
-    "Settings",
+    "Device",
+    "DeviceConnectionError",
+    "DeviceError",
+    "InfoForCharger",
+    "SettingsForCharger",
 ]

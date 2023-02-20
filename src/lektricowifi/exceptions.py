@@ -1,9 +1,9 @@
-"""Exceptions for Lektrico charger."""
+"""Exceptions for Lektrico device."""
 
 
-class ChargerError(Exception):
-    """Generic Lektrico charger exception."""
+class DeviceError(Exception):
+    """Generic Lektrico device exception."""
 
 
-class ChargerConnectionError(ChargerError):
-    """Lektrico charger connection exception."""
+class DeviceConnectionError(DeviceError):
+    """Lektrico device connection exception."""

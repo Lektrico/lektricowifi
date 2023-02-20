@@ -1,4 +1,4 @@
-"""Asynchronous Python client for Lektrico charger."""
+"""Asynchronous Python client for Lektrico device."""
 from __future__ import annotations
 
 import asyncio
@@ -11,16 +11,16 @@ from aiohttp.client import ClientError, ClientResponseError, ClientSession
 from aiohttp.hdrs import METH_GET
 from yarl import URL
 
-from exceptions import ChargerConnectionError, ChargerError
-from models import Info, Settings
+from .exceptions import DeviceConnectionError, DeviceError
+from .models import InfoForCharger, SettingsForCharger, DetectType
 
 from async_timeout import timeout
 from builtins import str
 
 
 @dataclass
-class Charger:
-    """Main class for handling connections with a Lektrico charger."""
+class Device:
+    """Main class for handling connections with a Lektrico device."""
 
     _host: str
 
@@ -30,17 +30,17 @@ class Charger:
     _close_session: bool = False
 
     async def _request(self,uri: str) -> dict[str, Any]:
-        """Handle a request to a Lektrico charger.
+        """Handle a request to a Lektrico device.
         Args:
             uri: ex: "charger_info.get"
         Returns:
             A Python dictionary (JSON decoded) with the response from
             the Lektrico charger.
         Raises:
-            ChargerConnectionError: An error occurred while communicating with
-                the Lektrico charger.
-            ChargerError: Received an unexpected response from the Lektrico 
-                charger.
+            DeviceConnectionError: An error occurred while communicating with
+                the Lektrico device.
+            DeviceError: Received an unexpected response from the Lektrico 
+                device.
         """
         url = F"http://{self._host}/rpc/{uri}"
         print(url)
@@ -57,29 +57,29 @@ class Charger:
                 )
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
-            raise ChargerConnectionError(
-                "Timeout occurred while connecting to Lektrico charger"
+            raise DeviceConnectionError(
+                "Timeout occurred while connecting to Lektrico device"
             ) from exception
         except (
             ClientError,
             ClientResponseError,
             socket.gaierror,
         ) as exception:
-            raise ChargerConnectionError(
-                "Error occurred while communicating with Lektrico charger"
+            raise DeviceConnectionError(
+                "Error occurred while communicating with Lektrico device"
             ) from exception
 
         content_type = response.headers.get("Content-Type", "")
         if "application/json" not in content_type:
             text = await response.text()
-            raise ChargerError(
-                "Unexpected response from the Lektrico charger",
+            raise DeviceError(
+                "Unexpected response from the Lektrico device",
                 {"Content-Type": content_type, "response": text},
             )
 
         return await response.json()
 
-    async def charger_info(self) -> Info:
+    async def charger_info(self) -> InfoForCharger:
         """ Get information from Lektrico charger
         {'charger_state': 'A', 'session_energy': 0.0, 'charging_time': 0, 
         'session_id': 13, 'instant_power': 0.0, 'current': 0.0, 'voltage': 0.0, 
@@ -100,10 +100,10 @@ class Charger:
         data.update(data_new)
         
         # put readable format for state
-        data["extended_charger_state"] = self.put_readable_format(data["extended_charger_state"])
-        return Info.from_dict(data)
+        data["extended_charger_state"] = self._put_readable_format(data["extended_charger_state"])
+        return InfoForCharger.from_dict(data)
     
-    def put_readable_format(self, _state: str) -> str:
+    def _put_readable_format(self, _state: str) -> str:
         """Convert state in a readable format.
         ex: state="B_AUTH" -> "Connected_NeedAuth" """
         if _state == "A":
@@ -121,17 +121,23 @@ class Charger:
         else:
             return _state
 
-    async def charger_config(self) -> Settings:
+    async def charger_config(self) -> SettingsForCharger:
         """Returns the charger's configuration, as a string
         {'overtemp_threshold': 65, 'critical_temp_threshold': 75, 
         'voltage_gain': 1.0, 'current_gain': 1.0, 
         'calibration_temperature': 25.0, 'rcd_enabled': False, 
         'serial_number': 500006, 'board_revision': 'B', 'temp_offset': 0.0}"""
         data = await self._request("charger_config.get")
-        return Settings.from_dict(data)
+        return SettingsForCharger.from_dict(data)
+    
+    async def detect_device_type(self) -> DetectType:
+        """Returns the device's type.
+        Ex: {'type': '1p7k'}"""
+        data = await self._request("Device_id.Get")
+        return DetectType.from_dict(data)
     
     async def send_command(self, command: str) -> bool:
-        """Returns the charger's confirmation
+        """Returns the device's confirmation
         ex: True
         param command - examples: charge.start, charge.stop"""
         return await self._request(command)
@@ -141,10 +147,10 @@ class Charger:
         if self.session and self._close_session:
             await self.session.close()
 
-    async def __aenter__(self) -> Charger:
+    async def __aenter__(self) -> Device:
         """Async enter.
         Returns:
-            The Charger object.
+            The Device object.
         """
         return self
 
@@ -154,21 +160,3 @@ class Charger:
             _exc_info: Exec type.
         """
         await self.close()
-
-async def main():
-    """Example of reading things from a Lektrico charger."""
-    async with Charger("192.168.100.11") as charger:
-        # Current name
-#         info: Info = await charger.charger_info()
-#         print(info.charger_state)
-#         settings: Settings = await charger.charger_config()
-#         print(settings.serial_number)
-        answer: bool = await charger._request("charge.start")
-#         answer: bool = await charger.charge_start()
-        print(answer)
-#         answer = await charger.charge_stop()
-#         print(answer)
- 
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
