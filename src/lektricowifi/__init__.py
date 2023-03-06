@@ -1,11 +1,14 @@
 """Asynchronous Python client for Lektrico device."""
-from .lektricowifi import Device, DeviceConnectionError, DeviceError
-from .models import InfoForCharger, SettingsForCharger, DetectType
+from .lektricowifi import Device, DeviceConnectionError, DeviceError, LBMode
+from .models import InfoForCharger, Settings, InfoForM2W, Info
 
 __all__ = [
     "Device",
     "DeviceConnectionError",
     "DeviceError",
     "InfoForCharger",
-    "SettingsForCharger",
+    "InfoForM2W",
+    "Info",
+    "Settings",
+    "LBMode",
 ]
