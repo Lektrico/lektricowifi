@@ -3,13 +3,15 @@ from __future__ import annotations
 
 import asyncio
 import socket
+import json
+import random
 from dataclasses import dataclass
 from importlib import metadata
 from typing import Any, TypedDict
 from enum import IntEnum
 
 from aiohttp.client import ClientError, ClientResponseError, ClientSession
-from aiohttp.hdrs import METH_GET
+from aiohttp.hdrs import METH_GET, METH_POST
 from yarl import URL
 
 from .exceptions import DeviceConnectionError, DeviceError
@@ -56,10 +58,10 @@ class Device:
         total_charged_energy: 0, fw_version='1.23'}
         """
         if type == self.TYPE_1P7K or type == self.TYPE_3P22K:
-            data_info = await self._request("charger_info.get")
-            data_dyn = await self._request("app_config.get")
+            data_info = await self._request_get("charger_info.get")
+            data_dyn = await self._request_get("app_config.get")
             data = dict(data_info, **data_dyn)
-            data_new = await self._request("active_errors.get")
+            data_new = await self._request_get("active_errors.get")
             data.update(data_new)
             
             # put readable format for state
@@ -68,10 +70,10 @@ class Device:
             data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[int(data["current_limit_reason"])]
             return InfoForCharger.from_dict(data)
         elif type == self.TYPE_M2W:
-            data_info = await self._request("Meter_info.Get")
-            data_dyn = await self._request("App_config.Get")
+            data_info = await self._request_get("Meter_info.Get")
+            data_dyn = await self._request_get("App_config.Get")
             data = dict(data_info, **data_dyn)
-            data_new = await self._request("Sw_version.Get")
+            data_new = await self._request_get("Sw_version.Get")
             data.update(data_new)
             return InfoForM2W.from_dict(data)
         else:
@@ -82,7 +84,7 @@ class Device:
         Ex:
         {'type': '1p7k', 'serial_number': 500006, 'board_revision': 'B'}"""
         # get device's type
-        data = await self._request("Device_id.Get")
+        data = await self._request_get("Device_id.Get")
         index: int = data["device_id"].find("_")
         if index == -1:
             raise DeviceError("Incorrect device_id. Expected: type_serialNumber")
@@ -90,21 +92,105 @@ class Device:
         data_type: dict
         if _type == self.TYPE_1P7K or _type == self.TYPE_3P22K:
             data_type = {"type": _type}
-            data = await self._request("charger_config.get")
+            data = await self._request_get("charger_config.get")
         elif _type == self.TYPE_M2W:
             data_type = {"type": self.TYPE_M2W}
-            data = await self._request("M2w_config.Get")
+            data = await self._request_get("M2w_config.Get")
         else:
             raise DeviceError("Unknown device_id")
         
         data = dict(data_type, **data)
         return Settings.from_dict(data)
     
-    async def send_command(self, command: str) -> bool:
-        """Return the device's confirmation.
-        ex: True
-        param command - examples: charge.start, charge.stop"""
-        return await self._request(command)
+    async def send_charge_start(self) -> bool:
+        """Command the charger to start charging.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "charge.start", 
+            "params":{"tag": "HASS"}})
+        
+    async def send_charge_stop(self) -> bool:
+        """Command the charger to stop charging.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "charge.stop"})
+        
+    async def send_reset(self) -> bool:
+        """Command the device to reset.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "device.reset"})    
+        
+    async def set_auth(self, value: bool) -> bool:
+        """Set the authentication mode.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "app_config.set", 
+            "params":{"config_key": "headless", "config_value": value}})
+        
+    async def set_led_max_brightness(self, value: int) -> bool:
+        """Set the value of led max brightness.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "app_config.set", 
+            "params":{"config_key": "led_max_brightness", "config_value": value}})
+
+    async def set_dynamic_current(self, value: int) -> bool:
+        """Set dynamic current.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "dynamic_current.set", 
+            "params":{"dynamic_current": value}})
+    
+    async def set_user_current(self, value: int) -> bool:
+        """Set user current.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "app_config.set", 
+            "params":{"config_key": "user_current", "config_value": value}})
+
+    async def set_load_balancing_mode(self, value: int) -> bool:
+        """Set load_balancing_mode.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "app_config.set", 
+            "params":{"config_key": "load_balancing_mode", "config_value": value}})
+    
+    async def set_charger_locked(self, value: bool) -> bool:
+        """Lock or unlock the device.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "app_config.set", 
+            "params":{"config_key": "charger_locked", "config_value": value}})    
+
+        
 
     async def close(self) -> None:
         """Close open client session."""
@@ -124,9 +210,10 @@ class Device:
             _exc_info: Exec type.
         """
         await self.close()
-        
-    async def _request(self,uri: str) -> dict[str, Any]:
-        """Handle a request to a Lektrico device.
+    
+    async def _request_get(self,uri: str) -> dict[str, Any]:
+        """
+        Handle a GET request to a Lektrico device.
         Args:
             uri: ex: "charger_info.get"
         Returns:
@@ -138,8 +225,44 @@ class Device:
             DeviceError: Received an unexpected response from the Lektrico 
                 device.
         """
-        url = F"http://{self._host}/rpc/{uri}"
-
+        _url: str = F"http://{self._host}/rpc/{uri}"
+        return await self._request(_url, METH_GET, None)
+    
+    async def _request_post(self,json: str) -> dict[str, Any]:
+        """
+        Handle a POST request to a Lektrico device.
+        Args:
+            json: ex: {"src": "HASS", 
+                            "id": random.randint(10000000, 99999999), 
+                            "method": "charge.start", 
+                            "params":{"tag": "HASS"}}
+        Returns:
+            A Python dictionary (JSON decoded) with the response from
+            the Lektrico charger.
+        Raises:
+            DeviceConnectionError: An error occurred while communicating with
+                the Lektrico device.
+            DeviceError: Received an unexpected response from the Lektrico 
+                device.
+        """
+        return await self._request(F"http://{self._host}/rpc", METH_POST, json)
+        
+    async def _request(self,url: str, method: str, json: str) -> dict[str, Any]:
+        """Handle a request to a Lektrico device.
+        Args:
+            url: ex: "charger_info.get"
+            method: ex: METH_GET
+            json: None for METH_GET
+                  str for METH_POST
+        Returns:
+            A Python dictionary (JSON decoded) with the response from
+            the Lektrico charger.
+        Raises:
+            DeviceConnectionError: An error occurred while communicating with
+                the Lektrico device.
+            DeviceError: Received an unexpected response from the Lektrico 
+                device.
+        """
         if self.session is None:
             self.session = ClientSession()
             self._close_session = True
@@ -147,8 +270,9 @@ class Device:
         try:
             async with timeout(self.request_timeout):
                 response = await self.session.request(
-                    METH_GET,
+                    method,
                     url,
+                    json = json
                 )
                 response.raise_for_status()
         except asyncio.TimeoutError as exception:
