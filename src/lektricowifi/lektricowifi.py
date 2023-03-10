@@ -37,7 +37,8 @@ class Device:
     
     TYPE_1P7K: str = "1p7k"
     TYPE_3P22K: str = "3p22k"
-    TYPE_M2W: str = "m2w"
+    TYPE_EM: str = "em"
+    TYPE_3EM: str = "3em"
     
     CURRENT_LIMIT_REASON = ["No limit", "Installation current", 
                             "User limit", "Dynamic limit", "Schedule",
@@ -85,7 +86,7 @@ class Device:
             # put current_limit_reason as str
             data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[int(data["current_limit_reason"])]
             return InfoForCharger.from_dict(data)
-        elif type == self.TYPE_M2W:
+        elif type == self.TYPE_EM or type == self.TYPE_3EM:
             data_info = await self._request_get("Meter_info.Get")
             data_dyn = await self._request_get("App_config.Get")
             data = dict(data_info, **data_dyn)
@@ -101,16 +102,19 @@ class Device:
         {'type': '1p7k', 'serial_number': 500006, 'board_revision': 'B'}"""
         # get device's type
         data = await self._request_get("Device_id.Get")
-        index: int = data["device_id"].find("_")
-        if index == -1:
-            raise DeviceError("Incorrect device_id. Expected: type_serialNumber")
-        _type: str = data["device_id"][0:index]
+        _device_id: str = data["device_id"]
         data_type: dict
-        if _type == self.TYPE_1P7K or _type == self.TYPE_3P22K:
-            data_type = {"type": _type}
+        if _device_id.startswith(self.TYPE_1P7K):
+            data_type = {"type": self.TYPE_1P7K}
             data = await self._request_get("charger_config.get")
-        elif _type == self.TYPE_M2W:
-            data_type = {"type": self.TYPE_M2W}
+        elif _device_id.startswith(self.TYPE_3P22K):
+            data_type = {"type": self.TYPE_3P22K}
+            data = await self._request_get("charger_config.get")
+        elif _device_id.startswith("m2w_81"):
+            data_type = {"type": self.TYPE_EM}
+            data = await self._request_get("M2w_config.Get")
+        elif _device_id.startswith("m2w_83"):
+            data_type = {"type": self.TYPE_3EM}
             data = await self._request_get("M2w_config.Get")
         else:
             raise DeviceError("Unknown device_id")
