@@ -39,9 +39,9 @@ class Device:
     TYPE_3P22K: str = "3p22k"
     TYPE_M2W: str = "m2w"
     
-    CURRENT_LIMIT_REASON = ["No Limit", "Installation Current", 
-                            "User Limit", "Dynamic Limit", "Schedule",
-                            "EM Offline", "EM", "OCPP"]
+    CURRENT_LIMIT_REASON = ["No limit", "Installation current", 
+                            "User limit", "Dynamic limit", "Schedule",
+                            "EM offline", "EM", "OCPP"]
     
     request_timeout: int = 8
     session: ClientSession | None = None
@@ -61,7 +61,23 @@ class Device:
             data_info = await self._request_get("charger_info.get")
             data_dyn = await self._request_get("app_config.get")
             data = dict(data_info, **data_dyn)
-            data_new = await self._request_get("active_errors.get")
+            
+            if data["has_active_errors"]:
+                data_new = await self._request_get("active_errors.get")
+            else:
+                data_new = {
+                  "state_e_activated": False,
+                  "overtemp": False,
+                  "critical_temp": False,
+                  "overcurrent": False,
+                  "meter_fault": False,
+                  "voltage_error": False,
+#                   "undervoltage_error": False,
+#                   "overvoltage_error": False,
+                  "rcd_error": False
+#                   "cp_diode_failure": False,
+#                   "contactor_failure": False,
+                }
             data.update(data_new)
             
             # put readable format for state

@@ -38,7 +38,11 @@ class InfoForCharger(Info):
     overcurrent: bool
     meter_fault: bool
     voltage_error: bool
+#     undervoltage_error: bool
+#     overvoltage_error: bool
     rcd_error: bool
+#     cp_diode_failure: bool
+#     contactor_failure: bool
     user_current: int
     current_limit_reason: str
 
@@ -77,7 +81,11 @@ class InfoForCharger(Info):
             overcurrent = data["overcurrent"],
             meter_fault = data["meter_fault"],
             voltage_error = data["voltage_error"],
+            undervoltage_error = data["undervoltage_error"],
+            overvoltage_error = data["overvoltage_error"],
             rcd_error = data["rcd_error"],
+            cp_diode_failure = data["cp_diode_failure"],
+            contactor_failure = data["contactor_failure"],
             user_current = data["user_current"],
             current_limit_reason = data["current_limit_reason"]
         )
