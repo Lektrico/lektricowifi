@@ -72,12 +72,11 @@ class Device:
                   "critical_temp": False,
                   "overcurrent": False,
                   "meter_fault": False,
-                  "voltage_error": False,
-#                   "undervoltage_error": False,
-#                   "overvoltage_error": False,
-                  "rcd_error": False
-#                   "cp_diode_failure": False,
-#                   "contactor_failure": False,
+                  "undervoltage_error": False,
+                  "overvoltage_error": False,
+                  "rcd_error": False,
+                  "cp_diode_failure": False,
+                  "contactor_failure": False,
                 }
             data.update(data_new)
             
@@ -327,6 +326,8 @@ class Device:
             return "Connected"
         elif _state == "B_AUTH":
             return "Connected,NeedAuth"
+        elif _state == "B_PAUSE":
+            return "Paused"
         elif _state == "C" or _state == "D":
             return "Charging"
         elif _state == "E" or _state == "F":
