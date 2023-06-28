@@ -1,3 +1,5 @@
+![LEKTRI.CO](https://lektri.co/wp-content/uploads/2023/06/logo-wbg.png)
+
 # LektricoWifi 
 
 This is a package for communicating with *[Lektrico](https://lektri.co/)*'s chargers (1P7K, 3P22K) and devices (EM, 3EM) when they are in your wifi network.
