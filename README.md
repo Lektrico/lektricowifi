@@ -13,7 +13,7 @@ You have to know the IP of your device.
 
   currents, voltages, powers, errors, ...
   
-  see the output in the examples below the
+  see the output in the examples below
     
 3. Command the device
 
@@ -22,15 +22,15 @@ commands for charger:
 - start charging: send_charge_start
 - stop charging: send_charge_stop
 - reset the device: send_reset
-- enable/disable authorisation: set_auth
-- set leds brightness: set_led_max_brightness
-- set the dynamic current: set_dynamic_current
-- set the user current: set_user_current
-- lock/unlock the device: set_charger_locked
+- enable/disable authorisation: set_auth with bool parameter
+- set leds brightness: set_led_max_brightness with int parameter 10->100
+- set the dynamic current: set_dynamic_current with int parameter 0 or 6->32
+- set the user current: set_user_current with int parameter 6->32
+- lock/unlock the device: set_charger_locked with bool parameter
 
 commands for em:
 
-- set the load balancing mode (OFF, POWER, HYBRID, GREEN): set_load_balancing_mode
+- set the load balancing mode (OFF, POWER, HYBRID, GREEN): set_load_balancing_mode with int parameter 0->3
 - reset the device: send_reset
 
 ## How to use it:
