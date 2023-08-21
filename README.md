@@ -6,6 +6,7 @@ This is a package for communicating with *[Lektrico](https://lektri.co/)*'s char
 
 You have to know the IP of your device.
 
+
 ## What is this package offering:
 1. Identify your device by IP
 
