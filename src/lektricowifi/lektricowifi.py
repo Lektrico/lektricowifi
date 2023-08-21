@@ -121,7 +121,7 @@ class Device:
         data = dict(data_type, **data)
         return Settings.from_dict(data)
     
-    async def send_charge_start(self) -> bool:
+    async def send_charge_start(self) -> dict:
         """Command the charger to start charging.
         Return the device's confirmation.
         """
@@ -131,7 +131,7 @@ class Device:
             "method": "charge.start", 
             "params":{"tag": "HASS"}})
         
-    async def send_charge_stop(self) -> bool:
+    async def send_charge_stop(self) -> dict:
         """Command the charger to stop charging.
         Return the device's confirmation.
         """
@@ -140,7 +140,7 @@ class Device:
             "id": random.randint(10000000, 99999999), 
             "method": "charge.stop"})
         
-    async def send_reset(self) -> bool:
+    async def send_reset(self) -> dict:
         """Command the device to reset.
         Return the device's confirmation.
         """
@@ -149,7 +149,7 @@ class Device:
             "id": random.randint(10000000, 99999999), 
             "method": "device.reset"})    
         
-    async def set_auth(self, value: bool) -> bool:
+    async def set_auth(self, value: bool) -> dict:
         """Set the authentication mode.
         Return the device's confirmation.
         """
@@ -159,7 +159,7 @@ class Device:
             "method": "app_config.set", 
             "params":{"config_key": "headless", "config_value": value}})
         
-    async def set_led_max_brightness(self, value: int) -> bool:
+    async def set_led_max_brightness(self, value: int) -> dict:
         """Set the value of led max brightness.
         Return the device's confirmation.
         """
@@ -169,7 +169,7 @@ class Device:
             "method": "app_config.set", 
             "params":{"config_key": "led_max_brightness", "config_value": value}})
 
-    async def set_dynamic_current(self, value: int) -> bool:
+    async def set_dynamic_current(self, value: int) -> dict:
         """Set dynamic current.
         Return the device's confirmation.
         """
@@ -179,7 +179,7 @@ class Device:
             "method": "dynamic_current.set", 
             "params":{"dynamic_current": value}})
     
-    async def set_user_current(self, value: int) -> bool:
+    async def set_user_current(self, value: int) -> dict:
         """Set user current.
         Return the device's confirmation.
         """
@@ -189,7 +189,7 @@ class Device:
             "method": "app_config.set", 
             "params":{"config_key": "user_current", "config_value": value}})
 
-    async def set_load_balancing_mode(self, value: int) -> bool:
+    async def set_load_balancing_mode(self, value: int) -> dict:
         """Set load_balancing_mode.
         Return the device's confirmation.
         """
