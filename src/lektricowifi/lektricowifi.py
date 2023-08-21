@@ -2,17 +2,12 @@
 from __future__ import annotations
 
 import asyncio
+import httpx
 import socket
-import json
 import random
 from dataclasses import dataclass
-from importlib import metadata
-from typing import Any, TypedDict
+from typing import Any
 from enum import IntEnum
-
-from aiohttp.client import ClientError, ClientResponseError, ClientSession
-from aiohttp.hdrs import METH_GET, METH_POST
-from yarl import URL
 
 from .exceptions import DeviceConnectionError, DeviceError
 from .models import InfoForCharger, InfoForM2W, Info, Settings
@@ -45,7 +40,7 @@ class Device:
                             "EM offline", "EM", "OCPP"]
     
     request_timeout: int = 8
-    session: ClientSession | None = None
+    asyncClient: httpx.AsyncClient | None = None
 
     _close_session: bool = False
 
@@ -213,8 +208,8 @@ class Device:
 
     async def close(self) -> None:
         """Close open client session."""
-        if self.session and self._close_session:
-            await self.session.close()
+        if self.asyncClient and self._close_session:
+            await self.asyncClient.aclose()
 
     async def __aenter__(self) -> Device:
         """Async enter.
@@ -245,7 +240,7 @@ class Device:
                 device.
         """
         _url: str = F"http://{self._host}/rpc/{uri}"
-        return await self._request(_url, METH_GET, None)
+        return await self._request(_url, "GET", None)
     
     async def _request_post(self,json: str) -> dict[str, Any]:
         """
@@ -264,7 +259,7 @@ class Device:
             DeviceError: Received an unexpected response from the Lektrico 
                 device.
         """
-        return await self._request(F"http://{self._host}/rpc", METH_POST, json)
+        return await self._request(F"http://{self._host}/rpc", "POST", json)
         
     async def _request(self,url: str, method: str, json: str) -> dict[str, Any]:
         """Handle a request to a Lektrico device.
@@ -282,13 +277,13 @@ class Device:
             DeviceError: Received an unexpected response from the Lektrico 
                 device.
         """
-        if self.session is None:
-            self.session = ClientSession()
+        if self.asyncClient is None:
+            self.asyncClient = httpx.AsyncClient() 
             self._close_session = True
 
         try:
             async with timeout(self.request_timeout):
-                response = await self.session.request(
+                response = await self.asyncClient.request(
                     method,
                     url,
                     json = json
@@ -299,8 +294,7 @@ class Device:
                 "Timeout occurred while connecting to Lektrico device"
             ) from exception
         except (
-            ClientError,
-            ClientResponseError,
+            httpx.ConnectError,
             socket.gaierror,
         ) as exception:
             raise DeviceConnectionError(
@@ -315,7 +309,7 @@ class Device:
                 {"Content-Type": content_type, "response": text},
             )
 
-        return await response.json()
+        return response.json()
         
     def _put_readable_format(self, _state: str) -> str:
         """Convert state in a readable format.
