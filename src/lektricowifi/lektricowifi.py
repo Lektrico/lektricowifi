@@ -79,14 +79,43 @@ class Device:
             data["extended_charger_state"] = self._put_readable_format(data["extended_charger_state"])
             # put current_limit_reason as str
             data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[int(data["current_limit_reason"])]
-            return InfoForCharger.from_dict(data)
+
+            _state_e_activated: bool
+            if "state_e_activated" in data.keys():
+                _state_e_activated = data["state_e_activated"]
+            else:
+                _state_e_activated = data["state_machine_e_activated"]
+
+            return InfoForCharger(**data,
+                                  current_l1=list(data["currents"])[0],
+                                  current_l2=list(data["currents"])[1],
+                                  current_l3=list(data["currents"])[2],
+                                  voltage_l1=list(data["voltages"])[0],
+                                  voltage_l2=list(data["voltages"])[1],
+                                  voltage_l3=list(data["voltages"])[2],
+                                  require_auth = not data["headless"],
+                                  charger_state=data["extended_charger_state"],
+                                  state_e_activated = _state_e_activated)
         elif type == self.TYPE_EM or type == self.TYPE_3EM:
             data_info = await self._request_get("Meter_info.Get")
             data_dyn = await self._request_get("App_config.Get")
             data = dict(data_info, **data_dyn)
             data_new = await self._request_get("Sw_version.Get")
             data.update(data_new)
-            return InfoForM2W.from_dict(data)
+            return InfoForM2W(**data, lb_mode = data["load_balancing_mode"], 
+                              breaker_curent = data["breaker_rating"], 
+                              current_l1 = list(data["current"])[0], 
+                              current_l2 = list(data["current"])[1], 
+                              current_l3 = list(data["current"])[2], 
+                              voltage_l1 = list(data["voltage"])[0], 
+                              voltage_l2 = list(data["voltage"])[1], 
+                              voltage_l3 = list(data["voltage"])[2], 
+                              power_l1 = list(data["active_p"])[0], 
+                              power_l2 = list(data["active_p"])[1], 
+                              power_l3 = list(data["active_p"])[2], 
+                              power_factor_l1 = list(data["power_factor"])[0], 
+                              power_factor_l2 = list(data["power_factor"])[1], 
+                              power_factor_l3 = list(data["power_factor"])[2]) 
         else:
             raise DeviceError("Unknown device_id")
     
@@ -114,7 +143,7 @@ class Device:
             raise DeviceError("Unknown device_id")
         
         data = dict(data_type, **data)
-        return Settings.from_dict(data)
+        return Settings(**data)
     
     async def send_charge_start(self) -> dict:
         """Command the charger to start charging.
@@ -295,6 +324,7 @@ class Device:
             ) from exception
         except (
             httpx.ConnectError,
+            httpx.ConnectTimeout,
             socket.gaierror,
         ) as exception:
             raise DeviceConnectionError(
