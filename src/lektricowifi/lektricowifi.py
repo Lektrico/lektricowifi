@@ -35,9 +35,9 @@ class Device:
     TYPE_EM: str = "em"
     TYPE_3EM: str = "3em"
     
-    CURRENT_LIMIT_REASON = ["No limit", "Installation current", 
-                            "User limit", "Dynamic limit", "Schedule",
-                            "EM offline", "EM", "OCPP"]
+    CURRENT_LIMIT_REASON = ["no_limit", "installation_current", 
+                            "user_limit", "dynamic_limit", "schedule",
+                            "em_offline", "em", "ocpp"]
     
     request_timeout: int = 8
     asyncClient: httpx.AsyncClient | None = None
@@ -74,17 +74,25 @@ class Device:
                   "contactor_failure": False,
                 }
             data.update(data_new)
+
+            if "dynamic_current" in data.keys():
+                data.pop("dynamic_current")
+                
+            #read dynamic_current and relay_mode
+            data_new = await self._request_get("dynamic_current.get")
+            data.update(data_new)
             
             # put readable format for state
-            data["extended_charger_state"] = self._put_readable_format(data["extended_charger_state"])
+            data["charger_state"] = self._put_readable_format(data["extended_charger_state"])
             # put current_limit_reason as str
             data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[int(data["current_limit_reason"])]
 
-            _state_e_activated: bool
-            if "state_e_activated" in data.keys():
-                _state_e_activated = data["state_e_activated"]
-            else:
-                _state_e_activated = data["state_machine_e_activated"]
+            # assure compatibility for devices with older versions
+            if "state_e_activated" not in data.keys():
+                data["state_e_activated"] = data["state_machine_e_activated"]
+
+            if "relay_mode" not in data.keys():
+                data["relay_mode"] = -1
 
             return InfoForCharger(**data,
                                   current_l1=list(data["currents"])[0],
@@ -93,9 +101,7 @@ class Device:
                                   voltage_l1=list(data["voltages"])[0],
                                   voltage_l2=list(data["voltages"])[1],
                                   voltage_l3=list(data["voltages"])[2],
-                                  require_auth = not data["headless"],
-                                  charger_state=data["extended_charger_state"],
-                                  state_e_activated = _state_e_activated)
+                                  require_auth = not data["headless"])
         elif type == self.TYPE_EM or type == self.TYPE_3EM:
             data_info = await self._request_get("Meter_info.Get")
             data_dyn = await self._request_get("App_config.Get")
@@ -232,8 +238,16 @@ class Device:
             "id": random.randint(10000000, 99999999), 
             "method": "app_config.set", 
             "params":{"config_key": "charger_locked", "config_value": value}})    
-
-        
+    
+    async def set_relay_mode(self, value_dynamic_current: int, value: int) -> bool:
+        """Set relay_mode.
+        Return the device's confirmation.
+        """
+        return await self._request_post(
+            {"src": "HASS", 
+            "id": random.randint(10000000, 99999999), 
+            "method": "dynamic_current.Set", 
+            "params":{"dynamic_current": value_dynamic_current, "relay_mode": value}})        
 
     async def close(self) -> None:
         """Close open client session."""
@@ -343,21 +357,20 @@ class Device:
         
     def _put_readable_format(self, _state: str) -> str:
         """Convert state in a readable format.
-        ex: state="B_AUTH" -> "Connected_NeedAuth" """
+        ex: state="B_AUTH" -> "need_auth" """
         if _state == "A":
-            return "Available"
+            return "available"
         elif _state == "B":
-            return "Connected"
+            return "connected"
         elif _state == "B_AUTH":
-            return "Connected,NeedAuth"
+            return "need_auth"
         elif _state == "B_PAUSE":
-            return "Paused"
+            return "paused"
         elif _state == "C" or _state == "D":
-            return "Charging"
+            return "charging"
         elif _state == "E" or _state == "F":
-            return "Error"
+            return "error"
         elif _state == "OTA":
-            return "Updating firmware"
+            return "updating_firmware"
         else:
             return _state
-

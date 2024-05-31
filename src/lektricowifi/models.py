@@ -21,28 +21,29 @@ class InfoForCharger(Info):
     """Object holding the Lektrico charger information.
     """
     charger_state: str
-    session_energy: float
     charging_time: int
-    instant_power: float
-    temperature: float
-    dynamic_current: int
-    require_auth: bool
-    install_current: int
-    led_max_brightness: int
-    total_charged_energy: int
-    has_active_errors: bool
-    state_e_activated: bool
-    overtemp: bool
-    critical_temp: bool
-    overcurrent: bool
-    meter_fault: bool
-    undervoltage_error: bool
-    overvoltage_error: bool
-    rcd_error: bool
-    cp_diode_failure: bool
     contactor_failure: bool
-    user_current: int
+    cp_diode_failure: bool
+    critical_temp: bool
     current_limit_reason: str
+    dynamic_current: int
+    has_active_errors: bool
+    install_current: int
+    instant_power: float
+    led_max_brightness: int
+    meter_fault: bool
+    overcurrent: bool
+    overtemp: bool
+    overvoltage_error: bool
+    relay_mode: int
+    require_auth: bool
+    rcd_error: bool
+    temperature: float
+    total_charged_energy: float
+    session_energy: float
+    state_e_activated: bool
+    undervoltage_error: bool
+    user_current: int
 
 
 class InfoForM2W(Info):
