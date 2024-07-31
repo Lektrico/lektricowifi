@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import httpx
 import socket
 import random
@@ -44,7 +45,7 @@ class Device:
 
     _close_session: bool = False
 
-    async def device_info(self, type: str) -> Info:
+    async def device_info(self, device_type: str) -> Info:
         """ Get information from Lektrico device.
         Ex for a charger:
         {'charger_state': 'A', 'session_energy': 0.0, 'charging_time': 0, 
@@ -53,7 +54,7 @@ class Device:
         headless=False, install_current=32, led_max_brightness=20, 
         total_charged_energy: 0, fw_version='1.23'}
         """
-        if type == self.TYPE_1P7K or type == self.TYPE_3P22K:
+        if device_type == self.TYPE_1P7K or device_type == self.TYPE_3P22K:
             data_info = await self._request_get("charger_info.get")
             data_dyn = await self._request_get("app_config.get")
             data = dict(data_info, **data_dyn)
@@ -102,7 +103,7 @@ class Device:
                                   voltage_l2=list(data["voltages"])[1],
                                   voltage_l3=list(data["voltages"])[2],
                                   require_auth = not data["headless"])
-        elif type == self.TYPE_EM or type == self.TYPE_3EM:
+        elif device_type == self.TYPE_EM or device_type == self.TYPE_3EM:
             data_info = await self._request_get("Meter_info.Get")
             data_dyn = await self._request_get("App_config.Get")
             data = dict(data_info, **data_dyn)
@@ -353,7 +354,12 @@ class Device:
                 {"Content-Type": content_type, "response": text},
             )
 
-        return response.json()
+        data = response.json()
+        if inspect.iscoroutine(data) :
+            return await data
+        else:
+            return data
+                
         
     def _put_readable_format(self, _state: str) -> str:
         """Convert state in a readable format.
