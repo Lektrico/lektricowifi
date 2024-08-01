@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from builtins import float
-from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 
 class Info(BaseModel):

@@ -106,7 +106,7 @@ class Device:
                                   voltage_l1=list(data["voltages"])[0],
                                   voltage_l2=list(data["voltages"])[1],
                                   voltage_l3=list(data["voltages"])[2],
-                                  require_auth = not data["headless"]).model_dump()
+                                  require_auth = not data["headless"]).dict()
         elif device_type == self.TYPE_EM or device_type == self.TYPE_3EM:
             data_info = await self._request_get("Meter_info.Get")
             data_dyn = await self._request_get("App_config.Get")
@@ -126,7 +126,7 @@ class Device:
                               power_l3 = list(data["active_p"])[2], 
                               power_factor_l1 = list(data["power_factor"])[0], 
                               power_factor_l2 = list(data["power_factor"])[1], 
-                              power_factor_l3 = list(data["power_factor"])[2]).model_dump()
+                              power_factor_l3 = list(data["power_factor"])[2]).dict()
         else:
             raise DeviceError("Unknown device_id")
     
@@ -154,7 +154,7 @@ class Device:
             raise DeviceError("Unknown device_id")
         
         data = dict(data_type, **data)
-        return Settings(**data).model_dump()
+        return Settings(**data).dict()
     
     async def send_charge_start(self) -> dict:
         """Command the charger to start charging.
