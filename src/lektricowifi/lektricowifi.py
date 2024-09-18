@@ -38,7 +38,9 @@ class Device:
     
     CURRENT_LIMIT_REASON = ["no_limit", "installation_current", 
                             "user_limit", "dynamic_limit", "schedule",
-                            "em_offline", "em", "ocpp"]
+                            "em_offline", "em", "ocpp", "overtemperature",
+                            "switching_phases", "user_limit", 
+                            "1p_charging_disabled", "unknown"]
     
     request_timeout: int = 8
     asyncClient: httpx.AsyncClient | None = None
@@ -90,7 +92,12 @@ class Device:
             if "current_limit_reason" not in data.keys():
                 data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[0]
             else:
-                data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[int(data["current_limit_reason"])]
+                # check if it is known in CURRENT_LIMIT_REASON
+                new_limit_reason_as_int = int(data["current_limit_reason"])
+                if new_limit_reason_as_int >= len(self.CURRENT_LIMIT_REASON) -1:
+                    new_limit_reason_as_int = len(self.CURRENT_LIMIT_REASON) -1
+
+                data["current_limit_reason"] = self.CURRENT_LIMIT_REASON[new_limit_reason_as_int]
 
             # assure compatibility for devices with older versions
             if "state_e_activated" not in data.keys():
