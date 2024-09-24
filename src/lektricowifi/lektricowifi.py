@@ -389,5 +389,9 @@ class Device:
             return "error"
         elif _state == "OTA":
             return "updating_firmware"
+        elif _state == "LOCKED":
+            return "locked"
+        elif _state == "B_SCHEDULER":
+            return "paused_by_scheduler"
         else:
             return _state
