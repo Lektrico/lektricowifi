@@ -3,7 +3,7 @@ import pytest
 from lektricowifi.exceptions import DeviceConnectionError
 from lektricowifi.lektricowifi import Device
 from lektricowifi.models import InfoForCharger, InfoForM2W, Settings
-from asyncmock import AsyncMock
+from unittest.mock import AsyncMock
 
 from tests.test_online_devices import process_for_pytest
 
